@@ -1,3 +1,5 @@
+allow system_server default_android_hwservice hwservice_manager find 
+
 allow dex2oat dex2oat_exec file execute_no_trans
 allow dex2oat system_linker_exec file execute_no_trans
 
