@@ -307,23 +307,22 @@ lsplant::ScopedLocalRef<jobject> IPCBridge::RequestSystemServerBinder(
     auto service_name = lsplant::ScopedLocalRef(env, env->NewStringUTF(bridgeServiceName.data()));
     lsplant::ScopedLocalRef<jobject> binder = {env, nullptr};
 
-    // The system_server might start its services slightly after Zygisk injects us.
+    // The daemon might start its bridge service slightly after `system_server` specialization.
     // We retry a few times to give it a chance to register.
-    for (int i = 0; i < 3; ++i) {
+    const int max_retry = 10;
+    for (int i = 0; i < max_retry; ++i) {
         binder = lsplant::JNI_CallStaticObjectMethod(env, service_manager_class_,
                                                      get_service_method_, service_name.get());
         if (binder) {
             LOGI("Got system server binder via {} on attempt {}.", bridgeServiceName.data(), i + 1);
             return binder;
         }
-        if (i < 2) {
-            LOGW("Failed to get system server binder via {}, will retry in 1 second...",
-                 bridgeServiceName.data());
-            std::this_thread::sleep_for(std::chrono::seconds(1));
-        }
+        LOGW("Failed to get system server binder via {}, will retry in 1 second...",
+             bridgeServiceName.data());
+        std::this_thread::sleep_for(std::chrono::seconds(1));
     }
 
-    LOGE("Failed to get system server binder after 3 attempts. Aborting.");
+    LOGE("Failed to get system server binder after {} attempts. Aborting.", max_retry);
     return {env, nullptr};
 }
 

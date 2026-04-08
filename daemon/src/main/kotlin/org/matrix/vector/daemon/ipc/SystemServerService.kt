@@ -5,7 +5,6 @@ import android.os.IBinder
 import android.os.IServiceCallback
 import android.os.Parcel
 import android.os.ServiceManager
-import android.os.SystemProperties
 import android.util.Log
 import org.lsposed.lspd.service.ILSPApplicationService
 import org.lsposed.lspd.service.ILSPSystemServerService
@@ -14,27 +13,22 @@ import org.matrix.vector.daemon.system.getSystemServiceManager
 
 private const val TAG = "VectorSystemServer"
 
-class SystemServerService(private val maxRetry: Int, private val proxyServiceName: String) :
-    ILSPSystemServerService.Stub(), IBinder.DeathRecipient {
+object SystemServerService : ILSPSystemServerService.Stub(), IBinder.DeathRecipient {
 
+  private var proxyServiceName: String? = null
   private var originService: IBinder? = null
-  private var requestedRetryCount = -maxRetry
 
-  companion object {
-    var systemServerRequested = false
-  }
+  var systemServerRequested = false
 
-  init {
-    Log.d(TAG, "registering via proxy $proxyServiceName")
+  fun registerProxyService(serviceName: String) {
+    Log.d(TAG, "Registering bridge service for `system_server` with name `$serviceName`.")
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       val callback =
           object : IServiceCallback.Stub() {
             override fun onRegistration(name: String, binder: IBinder?) {
-              if (name == proxyServiceName &&
-                  binder != null &&
-                  binder !== this@SystemServerService) {
-                Log.d(TAG, "Intercepted system service registration: $name")
+              if (name == serviceName && binder != null && binder !== this@SystemServerService) {
+                Log.d(TAG, "Intercepted system service registration with name `$name`")
                 originService = binder
                 runCatching { binder.linkToDeath(this@SystemServerService, 0) }
               }
@@ -42,14 +36,13 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
 
             override fun asBinder(): IBinder = this
           }
-      runCatching { getSystemServiceManager().registerForNotifications(proxyServiceName, callback) }
+      runCatching {
+            getSystemServiceManager().registerForNotifications(serviceName, callback)
+            ServiceManager.addService(serviceName, this)
+            proxyServiceName = serviceName
+          }
           .onFailure { Log.e(TAG, "Failed to register IServiceCallback", it) }
     }
-  }
-
-  fun putBinderForSystemServer() {
-    ServiceManager.addService(proxyServiceName, this)
-    binderDied()
   }
 
   override fun requestApplicationService(
@@ -69,8 +62,8 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
 
   override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
     originService?.let {
-      // This should however never happen, as service registration enforces later replacements
-      Log.i(TAG, "Original service $proxyServiceName alive, transmitting requests")
+      // This is unlikely to happen since we intentionally discard our proxy upon later replacements
+      Log.w(TAG, "Original service `$proxyServiceName` alive, transmitting requests.")
       return it.transact(code, data, reply, flags)
     }
 
@@ -102,20 +95,5 @@ class SystemServerService(private val maxRetry: Int, private val proxyServiceNam
   override fun binderDied() {
     originService?.unlinkToDeath(this, 0)
     originService = null
-  }
-
-  fun maybeRetryInject() {
-    if (requestedRetryCount < 0) {
-      Log.w(TAG, "System server injection fails, triggering restart...")
-      requestedRetryCount++
-      val restartTarget =
-          if (Build.SUPPORTED_64_BIT_ABIS.isNotEmpty() &&
-              Build.SUPPORTED_32_BIT_ABIS.isNotEmpty()) {
-            "zygote_secondary"
-          } else {
-            "zygote"
-          }
-      SystemProperties.set("ctl.restart", restartTarget)
-    }
   }
 }
