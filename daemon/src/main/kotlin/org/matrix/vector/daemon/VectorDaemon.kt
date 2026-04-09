@@ -73,7 +73,8 @@ object VectorDaemon {
     Process.setThreadPriority(Process.THREAD_PRIORITY_FOREGROUND)
     @Suppress("DEPRECATION") Looper.prepareMainLooper()
 
-    // Setup IPC channel for system_server before Android core services are available
+    // Squat on the proxy service name immediately, which creates the early IPC channel of
+    // ApplicationService for our Zygisk module during system_server specialization.
     SystemServerService.registerProxyService(proxyServiceName)
 
     // Start Environmental Daemons
@@ -145,7 +146,9 @@ object VectorDaemon {
                   Log.w(TAG, "System Server died! Clearing caches and re-injecting...")
                   bridgeService.unlinkToDeath(this, 0)
                   clearSystemCaches()
-                  SystemServerService.binderDied()
+                  SystemServerService.binderDied() // Cleanup old references
+                  // Re-claim the service name immediately to ensure that when system_server
+                  // restarts, our proxy is already there for the Zygisk module to find.
                   ServiceManager.addService(proxyServiceName, SystemServerService)
                   ManagerService.guard = null // Remove dead guard
                   Handler(Looper.getMainLooper()).post {

@@ -307,8 +307,9 @@ lsplant::ScopedLocalRef<jobject> IPCBridge::RequestSystemServerBinder(
     auto service_name = lsplant::ScopedLocalRef(env, env->NewStringUTF(bridgeServiceName.data()));
     lsplant::ScopedLocalRef<jobject> binder = {env, nullptr};
 
-    // The daemon might start its bridge service slightly after `system_server` specialization.
-    // We retry a few times to give it a chance to register.
+    // The daemon process and system_server specialization run in parallel.
+    // On slower devices, the daemon may take several seconds to call addService.
+    // We poll for up to 10 seconds to ensure the early IPC channel for system_server is available.
     const int max_retry = 10;
     for (int i = 0; i < max_retry; ++i) {
         binder = lsplant::JNI_CallStaticObjectMethod(env, service_manager_class_,

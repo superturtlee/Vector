@@ -21,11 +21,14 @@ object SystemServerService : ILSPSystemServerService.Stub(), IBinder.DeathRecipi
   var systemServerRequested = false
 
   fun registerProxyService(serviceName: String) {
+    // Register as the service name early to setup an IPC for `system_server`.
     Log.d(TAG, "Registering bridge service for `system_server` with name `$serviceName`.")
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
       val callback =
           object : IServiceCallback.Stub() {
+            // The IServiceCallback will tell us when the real Android service is ready,
+            // allowing us to capture it and then naturally stop intercepting traffic.
             override fun onRegistration(name: String, binder: IBinder?) {
               if (name == serviceName && binder != null && binder !== this@SystemServerService) {
                 Log.d(TAG, "Intercepted system service registration with name `$name`")
@@ -62,8 +65,9 @@ object SystemServerService : ILSPSystemServerService.Stub(), IBinder.DeathRecipi
 
   override fun onTransact(code: Int, data: Parcel, reply: Parcel?, flags: Int): Boolean {
     originService?.let {
-      // This is unlikely to happen since we intentionally discard our proxy upon later replacements
-      Log.w(TAG, "Original service `$proxyServiceName` alive, transmitting requests.")
+      // This is unlikely to happen unless system_server restarts / crashes, since we intentionally
+      // discard our proxy upon later replacements in registerProxyService.
+      Log.d(TAG, "Forwarding request to real `$proxyServiceName` service.")
       return it.transact(code, data, reply, flags)
     }
 
