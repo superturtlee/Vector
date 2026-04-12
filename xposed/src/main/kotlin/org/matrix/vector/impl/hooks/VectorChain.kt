@@ -42,13 +42,15 @@ class VectorChain(
 
     override fun getArg(index: Int): Any? = args[index]
 
-    override fun proceed(): Any? = proceedWith(thisObj ?: Any(), args)
+    override fun proceed(): Any? = internalProceed(thisObj, args)
 
-    override fun proceed(args: Array<Any?>): Any? = proceedWith(thisObj ?: Any(), args)
+    override fun proceed(args: Array<Any?>): Any? = internalProceed(thisObj, args)
 
-    override fun proceedWith(thisObject: Any): Any? = proceedWith(thisObject, args)
+    override fun proceedWith(thisObject: Any): Any? = internalProceed(thisObject, args)
 
-    override fun proceedWith(thisObject: Any, args: Array<Any?>): Any? {
+    override fun proceedWith(thisObject: Any, args: Array<Any?>): Any? = internalProceed(thisObject, args)
+
+    private fun internalProceed(thisObject: Any?, currentArgs: Array<Any?>): Any? {
         proceedCalled = true
 
         // Reached the end of the modern hooks; trigger the original executable (and legacy hooks)
@@ -86,7 +88,7 @@ class VectorChain(
         t: Throwable,
         record: VectorHookRecord,
         nextChain: VectorChain,
-        recoveryThis: Any,
+        recoveryThis: Any?,
         recoveryArgs: Array<Any?>,
     ): Any? {
         // Check if the exception originated from downstream (lower hooks or original method)
@@ -103,7 +105,7 @@ class VectorChain(
         if (!nextChain.proceedCalled) {
             // Crash occurred before calling proceed(); skip hooker and continue the chain
             Utils.logD("Hooker [$hookerName] crashed before proceed. Skipping.", t)
-            return nextChain.proceedWith(recoveryThis, recoveryArgs)
+            return nextChain.internalProceed(recoveryThis, recoveryArgs)
         } else {
             // Crash occurred after calling proceed(); suppress and restore downstream state
             Utils.logD("Hooker [$hookerName] crashed after proceed. Restoring state.", t)
