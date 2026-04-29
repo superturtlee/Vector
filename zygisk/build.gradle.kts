@@ -82,7 +82,7 @@ androidComponents {
                 group = "Vector Module Packaging"
                 dependsOn(
                     "assemble$variantCapped",
-                    ":app:package$variantCapped",
+                    ":manager:package$variantCapped",
                     ":daemon:package$variantCapped",
                     ":dex2oat:externalNativeBuild$variantCapped",
                 )
@@ -111,7 +111,7 @@ androidComponents {
                         mapOf("DEBUG" to if (variantLowered == "debug") "true" else "false")
                     filter<ReplaceTokens>("tokens" to tokens)
                 }
-                from(project(":app").tasks.getByName("package$variantCapped").outputs) {
+                from(project(":manager").tasks.getByName("package$variantCapped").outputs) {
                     include("*.apk")
                     rename(".*\\.apk", "manager.apk")
                 }
@@ -218,6 +218,6 @@ androidComponents {
     }
 }
 
-evaluationDependsOn(":app")
+evaluationDependsOn(":manager")
 
 evaluationDependsOn(":daemon")

@@ -137,7 +137,7 @@ object ManagerService : ILSPManagerService.Stub() {
           }
 
           intent.categories?.clear()
-          intent.addCategory("org.lsposed.manager.LAUNCH_MANAGER")
+          intent.addCategory("${BuildConfig.DEFAULT_MANAGER_PACKAGE_NAME}.LAUNCH_MANAGER")
           intent.setPackage(BuildConfig.MANAGER_INJECTED_PKG_NAME)
           managerIntent = Intent(intent)
         }
