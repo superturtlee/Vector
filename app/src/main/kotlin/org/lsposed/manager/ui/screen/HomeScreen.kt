@@ -45,6 +45,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -109,6 +110,25 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
     var systemAbi by remember { mutableStateOf("") }
     var enabledModulesCount by remember { mutableStateOf(-1) }
 
+    // 监听模块加载完成事件，直接更新数据
+    DisposableEffect(Unit) {
+        val listener = object : ModuleUtil.ModuleListener {
+            override fun onModulesReloaded() {
+                enabledModulesCount = moduleUtil.enabledModulesCount
+            }
+        }
+        moduleUtil.addListener(listener)
+
+        // 立即检查一次，如果已经加载完成
+        if (moduleUtil.isModulesLoaded) {
+            enabledModulesCount = moduleUtil.enabledModulesCount
+        }
+
+        onDispose {
+            moduleUtil.removeListener(listener)
+        }
+    }
+
     LaunchedEffect(Unit) {
         binderAlive = ConfigManager.isBinderAlive()
 
@@ -126,13 +146,11 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
                 ConfigManager.getXposedVersionName(),
                 ConfigManager.getXposedVersionCode()
             )
-            enabledModulesCount = moduleUtil.enabledModulesCount
         } else {
             statusTitle = context.getString(R.string.not_installed)
             statusSummary = context.getString(R.string.not_install_summary)
             apiVersion = context.getString(R.string.not_installed)
             frameworkVersion = context.getString(R.string.not_installed)
-            enabledModulesCount = -1
         }
 
         systemVersion = if (Build.VERSION.PREVIEW_SDK_INT != 0) {

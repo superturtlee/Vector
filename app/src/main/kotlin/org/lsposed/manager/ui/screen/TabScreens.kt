@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
@@ -44,10 +45,9 @@ import kotlin.math.abs
 
 @Serializable
 data class TabScreens(
-    val isBinderAlive: Boolean = true
+    val isBinderAlive: Boolean = true,
+    val initialTabIndex: Int = 1
 ) : AbstractScreen() {
-
-    var currentTabIndex by mutableIntStateOf(1)
 
     val modulesScreen = ModulesScreen()
     val homeScreen = HomeScreen()
@@ -63,6 +63,9 @@ data class TabScreens(
         val context = LocalContext.current
         val scope = rememberCoroutineScope()
 
+        // 使用rememberSaveable保存当前选中的tab，横竖屏切换时保持状态
+        var currentTabIndex by rememberSaveable { mutableIntStateOf(initialTabIndex) }
+
         val pageCount = if (isBinderAlive) 4 else 3
         val pagerState = rememberPagerState(
             initialPage = currentTabIndex,
@@ -73,6 +76,7 @@ data class TabScreens(
             scope.launch {
                 val distance = abs(1 - pagerState.currentPage).coerceAtLeast(1)
                 val duration = 100 * distance + 100
+                currentTabIndex = 1
                 pagerState.animateScrollToPage(
                     page = 1,
                     animationSpec = tween(durationMillis = duration, easing = EaseInOut)
