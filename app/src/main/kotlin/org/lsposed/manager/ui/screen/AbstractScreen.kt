@@ -41,5 +41,6 @@ abstract class AbstractScreen : NavKey {
      * TabScreen 返回 false（保留在栈中）
      * SecondaryScreen 返回 true（返回后销毁）
      */
-    abstract fun getNeedDestroyAfterBack(): Boolean//global page 不需要销毁，二级页面需要销毁
+    abstract fun isGlobal(): Boolean//global page 不需要销毁，二级页面需要销毁
+    
 }

@@ -82,7 +82,7 @@ data class ModulesScreen(//持久化数据保存
         )
     }
 
-    override fun getNeedDestroyAfterBack(): Boolean = false
+    override fun isGlobal(): Boolean = false
 }
 
 @Composable
@@ -430,7 +430,7 @@ fun ModuleItem(
             .onSizeChanged { size ->
                 cardWidth = size.width
             }
-            .pointerInput(Unit) {
+            .pointerInput(Unit) {//防误触
                 detectTapGestures(
                     onTap = { offset ->
                         // 计算开关中心位置：卡片宽度 - 右边距(16dp) - 开关宽度的一半(约25dp)
@@ -451,7 +451,8 @@ fun ModuleItem(
                         onLongClick()
                     }
                 )
-            }
+            },
+        pressFeedbackType = top.yukonga.miuix.kmp.utils.PressFeedbackType.Sink
     ) {
         Row(
             modifier = Modifier

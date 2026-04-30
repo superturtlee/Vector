@@ -177,5 +177,5 @@ data class TabScreens(
         }
     }
 
-    override fun getNeedDestroyAfterBack(): Boolean = false
+    override fun isGlobal(): Boolean = false
 }

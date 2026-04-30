@@ -220,5 +220,5 @@ data class LogsScreen(val dummy: Int = 0) : AbstractScreen() {
 }
 
 
-    override fun getNeedDestroyAfterBack(): Boolean = false
+    override fun isGlobal(): Boolean = false
 }
