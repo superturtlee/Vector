@@ -118,12 +118,6 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
             }
         }
         moduleUtil.addListener(listener)
-
-        // 立即检查一次，如果已经加载完成
-        if (moduleUtil.isModulesLoaded) {
-            enabledModulesCount = moduleUtil.enabledModulesCount
-        }
-
         onDispose {
             moduleUtil.removeListener(listener)
         }
@@ -133,6 +127,9 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
         binderAlive = ConfigManager.isBinderAlive()
 
         if (binderAlive) {
+            if (moduleUtil.isModulesLoaded) {
+                enabledModulesCount = moduleUtil.enabledModulesCount
+            }
             statusTitle = context.getString(R.string.activated)
             statusSummary = String.format(
                 "%s (%d)",
