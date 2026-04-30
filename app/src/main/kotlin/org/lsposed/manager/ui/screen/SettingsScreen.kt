@@ -102,21 +102,17 @@ data class SettingsScreen(val dummy: Int = 0) : AbstractScreen() {
                 scope.launch(Dispatchers.IO) {
                     try {
                         BackupUtils.backup(it)
-                        withContext(Dispatchers.Main) {
                             android.widget.Toast.makeText(
                                 context,
                                 R.string.settings_backup,
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
-                        }
                     } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
                             android.widget.Toast.makeText(
                                 context,
                                 context.getString(R.string.settings_backup_failed2, e.message ?: ""),
                                 android.widget.Toast.LENGTH_LONG
                             ).show()
-                        }
                     }
                 }
             }
@@ -130,21 +126,17 @@ data class SettingsScreen(val dummy: Int = 0) : AbstractScreen() {
                 scope.launch(Dispatchers.IO) {
                     try {
                         BackupUtils.restore(it)
-                        withContext(Dispatchers.Main) {
                             android.widget.Toast.makeText(
                                 context,
                                 R.string.settings_restore,
                                 android.widget.Toast.LENGTH_SHORT
                             ).show()
-                        }
                     } catch (e: Exception) {
-                        withContext(Dispatchers.Main) {
                             android.widget.Toast.makeText(
                                 context,
                                 context.getString(R.string.settings_restore_failed2, e.message ?: ""),
                                 android.widget.Toast.LENGTH_LONG
                             ).show()
-                        }
                     }
                 }
             }

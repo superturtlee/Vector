@@ -76,7 +76,6 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
     val scrollBehavior = MiuixScrollBehavior()
 
     var binderAlive by remember { mutableStateOf(false) }
-    var needUpdate by remember { mutableStateOf(false) }
     var statusTitle by remember { mutableStateOf("") }
     var statusSummary by remember { mutableStateOf("") }
     var apiVersion by remember { mutableStateOf("") }
@@ -212,26 +211,6 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
                                 fontSize = MiuixTheme.textStyles.body2.fontSize,
                                 color = MiuixTheme.colorScheme.onSurfaceVariantSummary
                             )
-                        }
-                    }
-
-                    // Update Warning Card
-                    if (needUpdate && binderAlive) {
-                        Card(modifier = Modifier.fillMaxWidth()) {
-                            Column(modifier = Modifier.padding(16.dp)) {
-                                Text(
-                                    text = stringResource(R.string.need_update),
-                                    fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                                    fontWeight = FontWeight.Medium,
-                                    color = MiuixTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(2.dp))
-                                Text(
-                                    text = stringResource(R.string.please_update_summary),
-                                    fontSize = MiuixTheme.textStyles.body2.fontSize,
-                                    color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                                )
-                            }
                         }
                     }
 
