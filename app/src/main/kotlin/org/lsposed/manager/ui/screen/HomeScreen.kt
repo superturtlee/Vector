@@ -109,16 +109,6 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
     var systemAbi by remember { mutableStateOf("") }
     var enabledModulesCount by remember { mutableStateOf(-1) }
 
-    // 加载启用的模块数量
-    LaunchedEffect(Unit) {
-        scope.launch(Dispatchers.IO) {
-            val count = moduleUtil.enabledModulesCount
-            withContext(Dispatchers.Main) {
-                enabledModulesCount = count
-            }
-        }
-    }
-
     LaunchedEffect(Unit) {
         binderAlive = ConfigManager.isBinderAlive()
 
@@ -136,11 +126,13 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
                 ConfigManager.getXposedVersionName(),
                 ConfigManager.getXposedVersionCode()
             )
+            enabledModulesCount = moduleUtil.enabledModulesCount
         } else {
             statusTitle = context.getString(R.string.not_installed)
             statusSummary = context.getString(R.string.not_install_summary)
             apiVersion = context.getString(R.string.not_installed)
             frameworkVersion = context.getString(R.string.not_installed)
+            enabledModulesCount = -1
         }
 
         systemVersion = if (Build.VERSION.PREVIEW_SDK_INT != 0) {
