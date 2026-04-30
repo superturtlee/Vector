@@ -69,10 +69,6 @@ data class TabScreens(
             pageCount = { pageCount }
         )
 
-        LaunchedEffect(pagerState.settledPage) {
-            currentTabIndex = pagerState.settledPage
-        }
-
         BackHandler(enabled = pagerState.settledPage != 1) {
             scope.launch {
                 val distance = abs(1 - pagerState.currentPage).coerceAtLeast(1)
@@ -89,11 +85,12 @@ data class TabScreens(
             bottomBar = {
                 NavigationBar {
                     NavigationBarItem(
-                        selected = pagerState.settledPage == 0,
+                        selected = currentTabIndex == 0,
                         onClick = {
                             scope.launch {
                                 val distance = abs(0 - pagerState.currentPage).coerceAtLeast(1)
                                 val duration = 100 * distance + 100
+                                currentTabIndex = 0
                                 pagerState.animateScrollToPage(
                                     page = 0,
                                     animationSpec = tween(durationMillis = duration, easing = EaseInOut)
@@ -105,11 +102,12 @@ data class TabScreens(
                     )
 
                     NavigationBarItem(
-                        selected = pagerState.settledPage == 1,
+                        selected = currentTabIndex == 1,
                         onClick = {
                             scope.launch {
                                 val distance = abs(1 - pagerState.currentPage).coerceAtLeast(1)
                                 val duration = 100 * distance + 100
+                                currentTabIndex = 1
                                 pagerState.animateScrollToPage(
                                     page = 1,
                                     animationSpec = tween(durationMillis = duration, easing = EaseInOut)
@@ -122,11 +120,12 @@ data class TabScreens(
 
                     if (isBinderAlive) {
                         NavigationBarItem(
-                            selected = pagerState.settledPage == 2,
+                            selected = currentTabIndex == 2,
                             onClick = {
                                 scope.launch {
                                     val distance = abs(2 - pagerState.currentPage).coerceAtLeast(1)
                                     val duration = 100 * distance + 100
+                                    currentTabIndex = 2
                                     pagerState.animateScrollToPage(
                                         page = 2,
                                         animationSpec = tween(durationMillis = duration, easing = EaseInOut)
@@ -139,12 +138,13 @@ data class TabScreens(
                     }
 
                     NavigationBarItem(
-                        selected = pagerState.settledPage == (if (isBinderAlive) 3 else 2),
+                        selected = currentTabIndex == (if (isBinderAlive) 3 else 2),
                         onClick = {
                             scope.launch {
                                 val targetPage = if (isBinderAlive) 3 else 2
                                 val distance = abs(targetPage - pagerState.currentPage).coerceAtLeast(1)
                                 val duration = 100 * distance + 100
+                                currentTabIndex = targetPage
                                 pagerState.animateScrollToPage(
                                     page = targetPage,
                                     animationSpec = tween(durationMillis = duration, easing = EaseInOut)
