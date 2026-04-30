@@ -22,32 +22,53 @@ package org.lsposed.manager.ui.screen
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.CheckCircleOutline
+import androidx.compose.material.icons.rounded.ErrorOutline
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
+import org.lsposed.manager.App
 import org.lsposed.manager.BuildConfig
 import org.lsposed.manager.ConfigManager
 import org.lsposed.manager.R
+import org.lsposed.manager.util.ModuleUtil
+import top.yukonga.miuix.kmp.basic.Button
 import top.yukonga.miuix.kmp.basic.Card
+import top.yukonga.miuix.kmp.basic.CardDefaults
 import top.yukonga.miuix.kmp.basic.DropdownImpl
 import top.yukonga.miuix.kmp.basic.Icon
 import top.yukonga.miuix.kmp.basic.IconButton
@@ -62,7 +83,7 @@ import top.yukonga.miuix.kmp.icon.extended.More
 import top.yukonga.miuix.kmp.overlay.OverlayListPopup
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
-import top.yukonga.miuix.kmp.basic.Button
+import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 @Serializable
 data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
@@ -74,6 +95,8 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
     ) {
     val context = LocalContext.current
     val scrollBehavior = MiuixScrollBehavior()
+    val scope = rememberCoroutineScope()
+    val moduleUtil = remember { ModuleUtil.getInstance() }
 
     var binderAlive by remember { mutableStateOf(false) }
     var statusTitle by remember { mutableStateOf("") }
@@ -83,6 +106,17 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
     var systemVersion by remember { mutableStateOf("") }
     var device by remember { mutableStateOf("") }
     var systemAbi by remember { mutableStateOf("") }
+    var enabledModulesCount by remember { mutableStateOf(-1) }
+
+    // 加载启用的模块数量
+    LaunchedEffect(Unit) {
+        scope.launch(Dispatchers.IO) {
+            val count = moduleUtil.enabledModulesCount
+            withContext(Dispatchers.Main) {
+                enabledModulesCount = count
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         binderAlive = ConfigManager.isBinderAlive()
@@ -196,28 +230,134 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    // Status Card
-                    Card(modifier = Modifier.fillMaxWidth()) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text(
-                                text = statusTitle,
-                                fontSize = MiuixTheme.textStyles.headline1.fontSize,
-                                fontWeight = FontWeight.Medium,
-                                color = MiuixTheme.colorScheme.onSurface
+                    // Status Card - Two column layout
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        // Left: Status Card (Activated/Not Activated)
+                        Card(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight(),
+                            colors = CardDefaults.defaultColors(
+                                color = if (binderAlive) {
+                                    if (isSystemInDarkTheme()) {
+                                        Color(0xFF1A3825)
+                                    } else {
+                                        Color(0xFFDFFAE4)
+                                    }
+                                } else {
+                                    MiuixTheme.colorScheme.surface
+                                }
                             )
-                            Spacer(modifier = Modifier.height(2.dp))
-                            Text(
-                                text = statusSummary,
-                                fontSize = MiuixTheme.textStyles.body2.fontSize,
-                                color = MiuixTheme.colorScheme.onSurfaceVariantSummary
-                            )
+                        ) {
+                            Box(modifier = Modifier.fillMaxSize()) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .offset(38.dp, 45.dp),
+                                    contentAlignment = Alignment.BottomEnd
+                                ) {
+                                    Icon(
+                                        modifier = Modifier.size(170.dp),
+                                        imageVector = if (binderAlive) {
+                                            Icons.Rounded.CheckCircleOutline
+                                        } else {
+                                            Icons.Rounded.ErrorOutline
+                                        },
+                                        tint = if (binderAlive) {
+                                            Color(0xFF36D167)
+                                        } else {
+                                            MiuixTheme.colorScheme.onSurfaceVariantSummary.copy(alpha = 0.3f)
+                                        },
+                                        contentDescription = null
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .padding(all = 16.dp)
+                                ) {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = statusTitle,
+                                        fontSize = 20.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                    Spacer(Modifier.height(2.dp))
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = statusSummary,
+                                        fontSize = 14.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
+                            }
+                        }
+
+                        // Right: Two small cards (Enabled Modules & API Version)
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxHeight()
+                        ) {
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                insideMargin = PaddingValues(16.dp)
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = stringResource(R.string.enabled),
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 15.sp,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = if (enabledModulesCount >= 0) enabledModulesCount.toString() else "-",
+                                        fontSize = 26.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
+                            Spacer(Modifier.height(12.dp))
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .weight(1f),
+                                insideMargin = PaddingValues(16.dp)
+                            ) {
+                                Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.Start) {
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = stringResource(R.string.info_api_version),
+                                        fontWeight = FontWeight.Medium,
+                                        fontSize = 15.sp,
+                                        color = MiuixTheme.colorScheme.onSurfaceVariantSummary,
+                                    )
+                                    Text(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        text = apiVersion,
+                                        fontSize = 26.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MiuixTheme.colorScheme.onSurface,
+                                    )
+                                }
+                            }
                         }
                     }
 
                     // Info Card
                     Card(modifier = Modifier.fillMaxWidth()) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            InfoItem(stringResource(R.string.info_api_version), apiVersion)
                             InfoItem(stringResource(R.string.info_framework_version), frameworkVersion)
                             InfoItem(stringResource(R.string.info_system_version), systemVersion)
                             InfoItem(stringResource(R.string.info_device), device)
