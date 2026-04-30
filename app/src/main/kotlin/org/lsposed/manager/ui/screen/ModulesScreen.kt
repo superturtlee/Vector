@@ -451,8 +451,7 @@ fun ModuleItem(
                         onLongClick()
                     }
                 )
-            },
-        pressFeedbackType = top.yukonga.miuix.kmp.utils.PressFeedbackType.Sink
+            }
     ) {
         Row(
             modifier = Modifier
