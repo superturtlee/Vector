@@ -57,6 +57,7 @@ import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
+import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
 
@@ -150,6 +151,26 @@ data class AppListScreen(
                             Icon(
                                 imageVector = MiuixIcons.Back,
                                 contentDescription = "Back"
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = {
+                            //直接启动应用 （如果它可以被启动）
+                            //在IO线程中获取启动Intent，避免在主线程中进行可能的耗时操作
+                                scope.launch(Dispatchers.IO) {
+                                    val launchIntent = pm.getLaunchIntentForPackage(packageName)
+                                    if (launchIntent != null) {
+                                    context.startActivity(launchIntent)
+                                    }
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = MiuixIcons.Settings,
+                                contentDescription = "Settings",
+                                tint = MiuixTheme.colorScheme.onSurface
                             )
                         }
                     }
