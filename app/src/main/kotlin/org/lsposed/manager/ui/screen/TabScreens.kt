@@ -62,7 +62,7 @@ import kotlin.math.abs
 @Serializable
 data class TabScreens(
     val isBinderAlive: Boolean = true,
-    val initialTabIndex: Int = 1
+    var currentTabIndex: Int = 0
 ) : AbstractScreen() {
 
     val modulesScreen = ModulesScreen()
@@ -88,8 +88,8 @@ data class TabScreens(
         // 根据是否支持模糊来决定NavigationBar的颜色
         val navBarColor = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface
 
-        // 使用rememberSaveable保存当前选中的tab，横竖屏切换时保持状态
-        var currentTabIndex by rememberSaveable { mutableIntStateOf(if (initialTabIndex == 1) 0 else initialTabIndex) }
+        // 根据是否支持模糊来决定NavigationBar的颜色
+        val navBarColor = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface
 
         val pageCount = if (isBinderAlive) 4 else 3
         val pagerState = rememberPagerState(
@@ -97,7 +97,7 @@ data class TabScreens(
             pageCount = { pageCount }
         )
 
-        // 监听页面切换，调用对应screen的Refresh
+        // 监听页面切换，更新 currentTabIndex 并调用对应screen的Refresh
         LaunchedEffect(pagerState.settledPage) {
             when (pagerState.settledPage) {
                 0 -> homeScreen.Refresh()
