@@ -102,7 +102,7 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             VectorTheme {
-                Initialize(currentTabIndex = initialPage, isBinderAlive = isBinderAlive)
+                Initialize(initialPage = initialPage, isBinderAlive = isBinderAlive)
             }
         }
     }
@@ -111,7 +111,7 @@ class MainActivity : FragmentActivity() {
     private fun Initialize(initialPage: Int, isBinderAlive: Boolean) {
         // TabScreens：包含所有标签页的容器，作为栈底元素
         val tabScreens = remember {
-            TabScreens(isBinderAlive = isBinderAlive, initialTabIndex = initialPage)
+            TabScreens(isBinderAlive = isBinderAlive, currentTabIndex = initialPage)
         }
 
         // 全局导航栈：栈底是 TabScreens，上面是二级页面
