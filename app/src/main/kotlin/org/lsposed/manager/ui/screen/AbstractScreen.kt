@@ -42,5 +42,9 @@ abstract class AbstractScreen : NavKey {
      * SecondaryScreen 返回 true（返回后销毁）
      */
     abstract fun isGlobal(): Boolean//global page 不需要销毁，二级页面需要销毁
-    
+
+    //刷新界面数据 未重载时默认不刷新
+    open fun Refresh() {
+        // 默认空实现，子类可以选择性覆盖
+    }
 }

@@ -72,6 +72,20 @@ data class TabScreens(
             pageCount = { pageCount }
         )
 
+        // 监听页面切换，调用对应screen的Refresh
+        LaunchedEffect(pagerState.settledPage) {
+            when (pagerState.settledPage) {
+                0 -> modulesScreen.Refresh()
+                1 -> homeScreen.Refresh()
+                2 -> if (isBinderAlive) {
+                    logsScreen.Refresh()
+                } else {
+                    settingsScreen.Refresh()
+                }
+                3 -> settingsScreen.Refresh()
+            }
+        }
+
         BackHandler(enabled = pagerState.settledPage != 1) {
             scope.launch {
                 val distance = abs(1 - pagerState.currentPage).coerceAtLeast(1)

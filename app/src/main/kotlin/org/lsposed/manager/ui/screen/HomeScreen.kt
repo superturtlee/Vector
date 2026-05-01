@@ -89,6 +89,13 @@ import top.yukonga.miuix.kmp.utils.PressFeedbackType
 
 @Serializable
 data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
+
+    private var refreshCallback: (() -> Unit)? = null
+
+    override fun Refresh() {
+        refreshCallback?.invoke()
+    }
+
     @Composable
     override fun Display(
         padding: PaddingValues,
@@ -110,6 +117,16 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
     var systemAbi by remember { mutableStateOf("") }
     var enabledModulesCount by remember { mutableStateOf(-1) }
 
+    // 设置刷新回调
+    DisposableEffect(Unit) {
+        refreshCallback = {
+            enabledModulesCount = moduleUtil.enabledModulesCount
+        }
+        onDispose {
+            refreshCallback = null
+        }
+    }
+
     // 监听模块加载完成事件，直接更新数据
     DisposableEffect(Unit) {
         val listener = object : ModuleUtil.ModuleListener {
@@ -127,9 +144,6 @@ data class HomeScreen(val dummy: Int = 0) : AbstractScreen() {
         binderAlive = ConfigManager.isBinderAlive()
 
         if (binderAlive) {
-            if (moduleUtil.isModulesLoaded) {
-                enabledModulesCount = moduleUtil.enabledModulesCount
-            }
             statusTitle = context.getString(R.string.activated)
             statusSummary = String.format(
                 "%s (%d)",
