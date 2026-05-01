@@ -102,7 +102,7 @@ class MainActivity : FragmentActivity() {
 
         setContent {
             VectorTheme {
-                Initialize(initialPage = initialPage, isBinderAlive = isBinderAlive)
+                Initialize(currentTabIndex = initialPage, isBinderAlive = isBinderAlive)
             }
         }
     }
