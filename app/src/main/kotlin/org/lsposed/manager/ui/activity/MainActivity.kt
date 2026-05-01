@@ -46,19 +46,19 @@ class MainActivity : FragmentActivity() {
         }
 
         if (intent.categories?.contains("org.lsposed.manager.LAUNCH_MANAGER") == true) {
-            return 1
+            return 0
         }
 
         if (ConfigManager.isBinderAlive() && !intent.dataString.isNullOrEmpty()) {
             return when (intent.dataString) {
-                "modules" -> 0
+                "modules" -> 1
                 "logs" -> 2
                 "settings" -> 3
-                else -> 1
+                else -> 0
             }
         }
 
-        return 1
+        return 0
     }
 
     override fun onNewIntent(intent: Intent) {

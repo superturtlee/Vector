@@ -55,11 +55,19 @@ import top.yukonga.miuix.kmp.basic.Scaffold
 import top.yukonga.miuix.kmp.basic.Switch
 import top.yukonga.miuix.kmp.basic.TextButton
 import top.yukonga.miuix.kmp.basic.TopAppBar
+import top.yukonga.miuix.kmp.basic.MiuixScrollBehavior
+import top.yukonga.miuix.kmp.basic.PullToRefresh
+import top.yukonga.miuix.kmp.basic.rememberPullToRefreshState
 import top.yukonga.miuix.kmp.icon.MiuixIcons
 import top.yukonga.miuix.kmp.icon.extended.Back
 import top.yukonga.miuix.kmp.icon.extended.Settings
 import top.yukonga.miuix.kmp.overlay.OverlayDialog
 import top.yukonga.miuix.kmp.theme.MiuixTheme
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import org.lsposed.manager.ui.utils.rememberBlurBackdrop
+import org.lsposed.manager.ui.utils.BlurredBar
+import org.lsposed.manager.ui.utils.CaptureBluredContent
 
 @Serializable
 data class AppListScreen(
@@ -78,18 +86,68 @@ data class AppListScreen(
         val scope = rememberCoroutineScope()
         val moduleUtil = remember { ModuleUtil.getInstance() }
         val pm = remember { context.packageManager }
+        val scrollBehavior = MiuixScrollBehavior()
 
         var apps by remember { mutableStateOf<List<PackageInfo>>(emptyList()) }
         var scopeStates by remember { mutableStateOf<Map<String, Boolean>>(emptyMap()) }
         var recommendedApps by remember { mutableStateOf<Set<String>>(emptySet()) }
         var isLoading by remember { mutableStateOf(true) }
+        var isRefreshing by remember { mutableStateOf(false) }
         var moduleName by remember { mutableStateOf("") }
         var showForceStopDialog by remember { mutableStateOf(false) }
         var showRebootDialog by remember { mutableStateOf(false) }
         var pendingToggle by remember { mutableStateOf<Pair<String, Boolean>?>(null) }
+        val pullToRefreshState = rememberPullToRefreshState()
+
+        var backdrop = rememberBlurBackdrop()
+        val blurActive = backdrop != null
+        val barColor = if (blurActive) Color.Transparent else MiuixTheme.colorScheme.surface
 
         // Handle back press to prevent app exit
         BackHandler(onBack = onBack)
+
+        // 监听 isRefreshing 状态，执行实际的应用列表加载
+        LaunchedEffect(isRefreshing) {
+            if (isRefreshing) {
+                scope.launch(Dispatchers.IO) {
+                    try {
+                        val module = moduleUtil.getModule(packageName, userId)
+                        if (module == null) {
+                            withContext(Dispatchers.Main) {
+                                isRefreshing = false
+                            }
+                            return@launch
+                        }
+
+                        val name = module.appName
+                        val scopeList = module.scopeList ?: emptyList()
+                        val recommended = scopeList.toSet()
+                        val allApps = AppHelper.getAppList(false)
+                        val comparator = AppHelper.getAppListComparator(0, pm)
+                        val filteredApps = allApps.filter { app ->
+                            AppHelper.shouldShowApp(app, userId, packageName)
+                        }.sortedWith(comparator)
+                        val scopeListSet = ConfigManager.getModuleScope(packageName)
+                        val scopes = scopeListSet.associate {
+                            "${it.packageName}_${it.userId}" to true
+                        }
+
+                        withContext(Dispatchers.Main) {
+                            moduleName = name
+                            apps = filteredApps
+                            scopeStates = scopes
+                            recommendedApps = recommended
+                            isRefreshing = false
+                        }
+                    } catch (e: Exception) {
+                        Log.e("AppListScreen", "Failed to refresh apps", e)
+                        withContext(Dispatchers.Main) {
+                            isRefreshing = false
+                        }
+                    }
+                }
+            }
+        }
 
         // 加载应用列表和作用域状态
         LaunchedEffect(packageName, userId) {
@@ -143,38 +201,42 @@ data class AppListScreen(
 
         Scaffold(
             topBar = {
-                TopAppBar(
-                    title = moduleName,
-                    subtitle = packageName,
-                    navigationIcon = {
-                        IconButton(onClick = onBack) {
-                            Icon(
-                                imageVector = MiuixIcons.Back,
-                                contentDescription = "Back"
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(
-                            onClick = {
-                            //直接启动应用 （如果它可以被启动）
-                            //在IO线程中获取启动Intent，避免在主线程中进行可能的耗时操作
-                                scope.launch(Dispatchers.IO) {
-                                    val launchIntent = pm.getLaunchIntentForPackage(packageName)
-                                    if (launchIntent != null) {
-                                    context.startActivity(launchIntent)
+                BlurredBar(backdrop){
+                    TopAppBar(
+                        scrollBehavior = scrollBehavior,
+                        color = barColor,
+                        title = moduleName,
+                        subtitle = packageName,
+                        navigationIcon = {
+                            IconButton(onClick = onBack) {
+                                Icon(
+                                    imageVector = MiuixIcons.Back,
+                                    contentDescription = "Back"
+                                )
+                            }
+                        },
+                        actions = {
+                            IconButton(
+                                onClick = {
+                                //直接启动应用 （如果它可以被启动）
+                                //在IO线程中获取启动Intent，避免在主线程中进行可能的耗时操作
+                                    scope.launch(Dispatchers.IO) {
+                                        val launchIntent = pm.getLaunchIntentForPackage(packageName)
+                                        if (launchIntent != null) {
+                                        context.startActivity(launchIntent)
+                                        }
                                     }
                                 }
+                            ) {
+                                Icon(
+                                    imageVector = MiuixIcons.Settings,
+                                    contentDescription = "Settings",
+                                    tint = MiuixTheme.colorScheme.onSurface
+                                )
                             }
-                        ) {
-                            Icon(
-                                imageVector = MiuixIcons.Settings,
-                                contentDescription = "Settings",
-                                tint = MiuixTheme.colorScheme.onSurface
-                            )
                         }
-                    }
-                )
+                    )
+                }
             }
         ) { innerPadding ->
             // 强制停止对话框
@@ -250,90 +312,109 @@ data class AppListScreen(
                 )
             }
 
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 12.dp)
-            ) {
-                if (isLoading) {
-                    item {
-                        Card(modifier = Modifier.padding(vertical = 6.dp)) {
-                            Box(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(16.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(R.string.loading),
-                                    color = MiuixTheme.colorScheme.onSurface
-                                )
-                            }
-                        }
-                    }
-                } else {
-                    // 合并显示所有应用，推荐应用排在前面
-                    val sortedApps = apps.sortedWith(
-                        compareByDescending<PackageInfo> { recommendedApps.contains(it.packageName) }
-                            .thenBy { it.packageName }
-                    )
-
-                    items(
-                        sortedApps,
-                        key = { "${it.packageName}_${it.applicationInfo?.uid ?: 0}" }
-                    ) { app ->
-                        val appInfo = app.applicationInfo
-                        if (appInfo != null) {
-                            val isRecommended = recommendedApps.contains(app.packageName)
-                            AppItem(
-                                app = app,
-                                pm = pm,
-                                userId = userId,
-                                isEnabled = scopeStates["${app.packageName}_${userId}"] ?: false,
-                                isRecommended = isRecommended,
-                                onToggle = { enabled ->
-                                    scope.launch(Dispatchers.IO) {
-                                        updateScope(
-                                            packageName = packageName,
-                                            appPackageName = app.packageName,
-                                            userId = userId,
-                                            enabled = enabled,
-                                            moduleUtil = moduleUtil,
-                                            onSuccess = { newStates ->
-                                                scopeStates = newStates
-                                            },
-                                            onNeedReboot = {
-                                                showRebootDialog = true
-                                            }
+            CaptureBluredContent(backdrop) {
+                PullToRefresh(
+                    isRefreshing = isRefreshing,
+                    pullToRefreshState = pullToRefreshState,
+                    onRefresh = { isRefreshing = true },
+                    contentPadding = PaddingValues(
+                        top = innerPadding.calculateTopPadding(),
+                        start = 12.dp,
+                        end = 12.dp
+                    ),
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxHeight()
+                            .nestedScroll(scrollBehavior.nestedScrollConnection),
+                        contentPadding = PaddingValues(
+                            top = innerPadding.calculateTopPadding(),
+                            bottom = innerPadding.calculateBottomPadding(),
+                            start = 12.dp,
+                            end = 12.dp
+                        )
+                    ) {
+                        if (isLoading) {
+                            item {
+                                Card(modifier = Modifier.padding(vertical = 6.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(16.dp),
+                                        contentAlignment = Alignment.Center
+                                    ) {
+                                        Text(
+                                            text = stringResource(R.string.loading),
+                                            color = MiuixTheme.colorScheme.onSurface
                                         )
-                                    }
-                                },
-                                onClick = {
-                                    val currentState = scopeStates["${app.packageName}_${userId}"] ?: false
-                                    scope.launch(Dispatchers.IO) {
-                                        updateScope(
-                                            packageName = packageName,
-                                            appPackageName = app.packageName,
-                                            userId = userId,
-                                            enabled = !currentState,
-                                            moduleUtil = moduleUtil,
-                                            onSuccess = { newStates ->
-                                                scopeStates = newStates
-                                            },
-                                            onNeedReboot = {
-                                                showRebootDialog = true
-                                            }
-                                        )
-                                    }
-                                },
-                                onLongClick = {
-                                    if (app.packageName != "system") {
-                                        pendingToggle = app.packageName to scopeStates["${app.packageName}_${userId}"]!!
-                                        showForceStopDialog = true
                                     }
                                 }
+                            }
+                        } else {
+                            // 合并显示所有应用，推荐应用排在前面
+                            val sortedApps = apps.sortedWith(
+                                compareByDescending<PackageInfo> { recommendedApps.contains(it.packageName) }
+                                    .thenBy { it.packageName }
                             )
+
+                            items(
+                                sortedApps,
+                                key = { "${it.packageName}_${it.applicationInfo?.uid ?: 0}" }
+                            ) { app ->
+                                val appInfo = app.applicationInfo
+                                if (appInfo != null) {
+                                    val isRecommended = recommendedApps.contains(app.packageName)
+                                    AppItem(
+                                        app = app,
+                                        pm = pm,
+                                        userId = userId,
+                                        isEnabled = scopeStates["${app.packageName}_${userId}"] ?: false,
+                                        isRecommended = isRecommended,
+                                        onToggle = { enabled ->
+                                            scope.launch(Dispatchers.IO) {
+                                                updateScope(
+                                                    packageName = packageName,
+                                                    appPackageName = app.packageName,
+                                                    userId = userId,
+                                                    enabled = enabled,
+                                                    moduleUtil = moduleUtil,
+                                                    onSuccess = { newStates ->
+                                                        scopeStates = newStates
+                                                    },
+                                                    onNeedReboot = {
+                                                        showRebootDialog = true
+                                                    }
+                                                )
+                                            }
+                                        },
+                                        onClick = {
+                                            val currentState = scopeStates["${app.packageName}_${userId}"] ?: false
+                                            scope.launch(Dispatchers.IO) {
+                                                updateScope(
+                                                    packageName = packageName,
+                                                    appPackageName = app.packageName,
+                                                    userId = userId,
+                                                    enabled = !currentState,
+                                                    moduleUtil = moduleUtil,
+                                                    onSuccess = { newStates ->
+                                                        scopeStates = newStates
+                                                    },
+                                                    onNeedReboot = {
+                                                        showRebootDialog = true
+                                                    }
+                                                )
+                                            }
+                                        },
+                                        onLongClick = {
+                                            if (app.packageName != "system") {
+                                                pendingToggle = app.packageName to scopeStates["${app.packageName}_${userId}"]!!
+                                                showForceStopDialog = true
+                                            }
+                                        }
+                                    )
+                                }
+                            }
                         }
                     }
                 }
@@ -397,7 +478,6 @@ data class AppListScreen(
     ) {
         var icon by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
         var label by remember { mutableStateOf("") }
-
         LaunchedEffect(app.packageName) {
             withContext(Dispatchers.IO) {
                 try {
@@ -410,7 +490,6 @@ data class AppListScreen(
                 }
             }
         }
-
         Card(
             modifier = Modifier
                 .fillMaxWidth()

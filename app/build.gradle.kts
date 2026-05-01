@@ -119,6 +119,7 @@ dependencies {
     implementation(libs.miuix.icons.android)
     implementation(libs.miuix.shapes.android)
     implementation(libs.miuix.navigation3.ui)
+    implementation(libs.miuix.blur.android)
 
     // Navigation3
     implementation(libs.androidx.navigation3.runtime)

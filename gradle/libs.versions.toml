@@ -63,6 +63,7 @@ miuix-preference-android = { module = "top.yukonga.miuix.kmp:miuix-preference-an
 miuix-icons-android = { module = "top.yukonga.miuix.kmp:miuix-icons-android", version.ref = "miuix" }
 miuix-shapes-android = { module = "top.yukonga.miuix.kmp:miuix-shapes-android", version.ref = "miuix" }
 miuix-navigation3-ui = { module = "top.yukonga.miuix.kmp:miuix-navigation3-ui", version.ref = "miuix" }
+miuix-blur-android = { module = "top.yukonga.miuix.kmp:miuix-blur-android", version.ref = "miuix" }
 
 # Navigation3
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "nav3" }
