@@ -88,9 +88,6 @@ data class TabScreens(
         // 根据是否支持模糊来决定NavigationBar的颜色
         val navBarColor = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface
 
-        // 根据是否支持模糊来决定NavigationBar的颜色
-        val navBarColor = if (backdrop != null) Color.Transparent else MiuixTheme.colorScheme.surface
-
         val pageCount = if (isBinderAlive) 4 else 3
         val pagerState = rememberPagerState(
             initialPage = currentTabIndex,
