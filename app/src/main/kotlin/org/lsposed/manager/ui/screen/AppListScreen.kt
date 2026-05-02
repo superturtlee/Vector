@@ -24,9 +24,12 @@ import android.content.pm.PackageManager
 import android.util.Log
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -526,13 +529,25 @@ data class AppListScreen(
                             fontWeight = FontWeight.Medium,
                             color = MiuixTheme.colorScheme.onSurface
                         )
+
                         if (isRecommended) {
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text(
-                                text = "★",
-                                fontSize = 16.sp,
-                                color = MiuixTheme.colorScheme.primary
-                            )
+
+                            val recommendedBg = MiuixTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+                            val recommendedFg = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+
+                            Box(
+                                modifier = Modifier
+                                    .background(recommendedBg, RoundedCornerShape(4.dp))
+                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                            ) {
+                                Text(
+                                    text = stringResource(R.string.requested_by_module),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = recommendedFg
+                                )
+                            }
                         }
                     }
 

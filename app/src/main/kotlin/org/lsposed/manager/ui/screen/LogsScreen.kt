@@ -161,6 +161,16 @@ data class LogsScreen(val dummy: Int = 0) : AbstractScreen() {
                     ) {
                         Icon(MiuixIcons.Delete, contentDescription = "Clear")
                     }
+                },
+                bottomContent = {
+                    TabRow(
+                        tabs = listOf(
+                            stringResource(R.string.nav_item_logs_module),
+                            stringResource(R.string.nav_item_logs_verbose)
+                        ),
+                        selectedTabIndex = selectedTabIndex,
+                        onTabSelected = { selectedTabIndex = it }
+                    )
                 }
             )
         }
@@ -173,15 +183,6 @@ data class LogsScreen(val dummy: Int = 0) : AbstractScreen() {
                     bottom = padding.calculateBottomPadding()
                 )
         ) {
-            TabRow(
-                tabs = listOf(
-                    stringResource(R.string.nav_item_logs_module),
-                    stringResource(R.string.nav_item_logs_verbose)
-                ),
-                selectedTabIndex = selectedTabIndex,
-                onTabSelected = { selectedTabIndex = it }
-            )
-
             PullToRefresh(
                 isRefreshing = isRefreshing,
                 pullToRefreshState = pullToRefreshState,

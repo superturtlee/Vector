@@ -20,11 +20,14 @@
 package org.lsposed.manager.ui.screen
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -472,6 +475,7 @@ data class ModulesScreen(//持久化数据保存
     ) {
         val context = LocalContext.current
         val density = LocalDensity.current
+        //val isInDarkTheme = isSystemInDarkTheme()
         var icon by remember { mutableStateOf<android.graphics.Bitmap?>(null) }
         var cardWidth by remember { mutableStateOf(0) }
 
@@ -537,12 +541,43 @@ data class ModulesScreen(//持久化数据保存
                 Column(
                     modifier = Modifier.weight(1f)
                 ) {
-                    Text(
-                        text = module.appName,
-                        fontSize = 16.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MiuixTheme.colorScheme.onSurface
-                    )
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            text = module.appName,
+                            fontSize = 16.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = MiuixTheme.colorScheme.onSurface
+                        )
+
+                        Spacer(modifier = Modifier.width(8.dp))
+
+                        // API 版本标签
+                        val modernBg = MiuixTheme.colorScheme.tertiaryContainer.copy(alpha = 0.6f)
+                        val legacyBg = MiuixTheme.colorScheme.secondaryContainer.copy(alpha = 0.8f)
+                        val modernFg = MiuixTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f)
+                        val legacyFg = MiuixTheme.colorScheme.onSecondaryContainer
+
+                        val (labelText, labelBg, labelFg) = if (module.legacy) {
+                            Triple("LEGACY", legacyBg, legacyFg)
+                        } else {
+                            Triple("API ${module.targetVersion}", modernBg, modernFg)
+                        }
+
+                        Box(
+                            modifier = Modifier
+                                .background(labelBg, RoundedCornerShape(4.dp))
+                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                        ) {
+                            Text(
+                                text = labelText,
+                                fontSize = 10.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = labelFg
+                            )
+                        }
+                    }
 
                     if (module.description.isNotEmpty()) {
                         Spacer(modifier = Modifier.height(4.dp))
