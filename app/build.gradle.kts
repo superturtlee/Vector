@@ -91,7 +91,7 @@ android {
 autoResConfig {
     generateClass = true
     generateRes = false
-    generatedClassFullName = "org.lsposed.manager.util.LangList"
+    generatedClassFullName = "org.matrix.vector.manager.util.LangList"
     generatedArrayFirstItem = "SYSTEM"
 }
 

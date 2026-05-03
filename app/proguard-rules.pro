@@ -1,4 +1,4 @@
--keep class org.lsposed.manager.Constants {
+-keep class org.matrix.vector.manager.Constants {
     public static boolean setBinder(android.os.IBinder);
 }
 -assumenosideeffects class kotlin.jvm.internal.Intrinsics {

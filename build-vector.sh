@@ -7,7 +7,7 @@ VECTOR_DIR="${WORKSPACE_DIR}/../Vector"
 echo "=== Vector Build Script ==="
 
 # 设置环境变量
-export JAVA_HOME="${WORKSPACE_DIR}/jdk-21.0.10"
+export JAVA_HOME="${WORKSPACE_DIR}/jdk"
 export ANDROID_HOME="${WORKSPACE_DIR}/android-sdk"
 export PATH="${JAVA_HOME}/bin:${ANDROID_HOME}/cmdline-tools/latest/bin:${ANDROID_HOME}/platform-tools:${PATH}"
 
